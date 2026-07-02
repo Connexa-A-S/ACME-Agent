@@ -1,0 +1,12 @@
+{
+  "ApiBaseUrl": "https://acme.cnxa.cloud/api",
+  "ServiceApiKey": "cnxa_svc_REPLACE_ME",
+  "OutputFormat": "pfx",
+  "PfxPassword": "change-this-local-password",
+  "OutputPath": "C:\\ProgramData\\Connexa\\ACMEAgent\\certs",
+  "StatePath": "C:\\ProgramData\\Connexa\\ACMEAgent\\state.json",
+  "LogPath": "C:\\ProgramData\\Connexa\\ACMEAgent\\logs",
+  "RunHooksOnFirstDownload": true,
+  "HooksPath": "C:\\ProgramData\\Connexa\\ACMEAgent\\hooks",
+  "Hooks": []
+}

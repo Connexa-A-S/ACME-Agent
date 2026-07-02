@@ -1,0 +1,27 @@
+<FortiGateCertSync>
+  <CertName>Wildcard.kunde.dk-CNXA</CertName>
+  <Scope>vdom</Scope>
+  <LogPath>C:\ProgramData\Connexa\ACMEAgent\logs\FortiGateCertSync.log</LogPath>
+  <PfxPassword>CHANGE-ME-STORE-IN-TECHFLOW</PfxPassword>
+  <SkipCertificateCheck>true</SkipCertificateCheck>
+
+  <FortiGates>
+    <FortiGate>
+      <Name>DKFortigate</Name>
+      <Host>IP:PORT</Host>
+      <ApiToken>API-Token</ApiToken>
+      <Vdom>root</Vdom>
+      <UpdateAdminCert>true</UpdateAdminCert>
+      <UpdateSslVpnCert>true</UpdateSslVpnCert>
+    </FortiGate>
+
+    <FortiGate>
+      <Name>USFortigate</Name>
+      <Host>IP:PORT</Host>
+      <ApiToken>API-Token</ApiToken>
+      <Vdom>root</Vdom>
+      <UpdateAdminCert>true</UpdateAdminCert>
+      <UpdateSslVpnCert>true</UpdateSslVpnCert>
+    </FortiGate>
+  </FortiGates>
+</FortiGateCertSync>
