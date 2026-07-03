@@ -19,6 +19,13 @@ param(
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = "Stop"
 
+# Registering a SYSTEM scheduled task and locking down ACLs both require elevation.
+$currentPrincipal = New-Object Security.Principal.WindowsPrincipal(
+    [Security.Principal.WindowsIdentity]::GetCurrent())
+if (-not $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    throw "Run this installer from an elevated PowerShell (Run as Administrator)."
+}
+
 function New-DirectoryIfMissing {
     param([Parameter(Mandatory)][string]$Path)
     if (-not (Test-Path -LiteralPath $Path)) {
@@ -28,8 +35,15 @@ function New-DirectoryIfMissing {
 
 function Protect-Value {
     param([Parameter(Mandatory)][string]$Value)
-    $secure = ConvertTo-SecureString -String $Value -AsPlainText -Force
-    return @{ ProtectedValue = ($secure | ConvertFrom-SecureString) }
+    # Machine-scoped DPAPI so the SYSTEM scheduled task can decrypt it, regardless of
+    # which admin account runs this installer. (User-scoped ConvertFrom-SecureString
+    # would only be decryptable by the installing user, not by SYSTEM.)
+    Add-Type -AssemblyName System.Security
+    $bytes = [Text.Encoding]::UTF8.GetBytes($Value)
+    $entropy = [Text.Encoding]::UTF8.GetBytes("CNXA-ACMEAgent")
+    $protected = [Security.Cryptography.ProtectedData]::Protect(
+        $bytes, $entropy, [Security.Cryptography.DataProtectionScope]::LocalMachine)
+    return @{ ProtectedValueB64 = [Convert]::ToBase64String($protected) }
 }
 
 if ($OutputFormat -eq "pfx" -and [string]::IsNullOrWhiteSpace($PfxPassword)) {
@@ -41,6 +55,16 @@ New-DirectoryIfMissing -Path (Join-Path $InstallPath "logs")
 New-DirectoryIfMissing -Path (Join-Path $InstallPath "certs")
 $resolvedHooksPath = if ([string]::IsNullOrWhiteSpace($HooksPath)) { Join-Path $InstallPath "hooks" } else { $HooksPath }
 New-DirectoryIfMissing -Path $resolvedHooksPath
+
+# Lock the install tree down to SYSTEM + Administrators only. It holds the config
+# (API key / PFX password), and the hooks that run as SYSTEM, so non-admin users
+# must not be able to read secrets or drop in executable hooks. Inheritance is set
+# so config.json and other files created below inherit the restrictive ACL.
+# SIDs are used instead of names to stay correct on non-English Windows.
+& icacls $InstallPath /inheritance:r /grant:r "*S-1-5-18:(OI)(CI)F" "*S-1-5-32-544:(OI)(CI)F" | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to harden ACLs on $InstallPath (icacls exit $LASTEXITCODE)."
+}
 
 $sourceScript = Join-Path $PSScriptRoot "CNXA-AcmeFetch.ps1"
 if (-not (Test-Path -LiteralPath $sourceScript)) {

@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string] $ConfigPath = ".\DKFortigate.xml",
     [Parameter(Mandatory)] [string] $PfxFile,
     [Parameter(Mandatory)] [string] $PfxPass
@@ -6,6 +6,12 @@
 
 $ErrorActionPreference = "Stop"
 $script:HadErrors = $false
+
+# Windows PowerShell 5.1 does not enable TLS 1.2 by default. PowerShell 7 already does.
+if ($PSVersionTable.PSVersion.Major -lt 6) {
+    [Net.ServicePointManager]::SecurityProtocol = `
+        [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+}
 
 function Write-Log {
     param(
@@ -41,22 +47,29 @@ function Get-XmlBool {
 
 function Invoke-FortiGateApi {
     param(
-        [ValidateSet("GET","POST","PUT")] [string] $Method,
+        [ValidateSet("GET","POST","PUT","DELETE")] [string] $Method,
         [string] $Path,
         $Body = $null
     )
 
-    $separator = if ($Path.Contains("?")) { "&" } else { "?" }
-    $uri = "https://$script:FortiGateHost$Path$separator" + "access_token=$script:ApiToken"
-
+    # Authenticate with a Bearer token header rather than an access_token query
+    # parameter, so the token never ends up in a URL (logs, proxies, history).
     $params = @{
         Method     = $Method
-        Uri        = $uri
+        Uri        = "https://$script:FortiGateHost$Path"
         TimeoutSec = 60
+        Headers    = @{ Authorization = "Bearer $script:ApiToken" }
     }
 
+    # -SkipCertificateCheck only exists in PowerShell 6+. On Windows PowerShell 5.1 we
+    # disable validation with a process-wide callback instead (reset in the outer finally).
     if ($script:SkipCertificateCheck) {
-        $params.SkipCertificateCheck = $true
+        if ($PSVersionTable.PSVersion.Major -ge 6) {
+            $params.SkipCertificateCheck = $true
+        }
+        else {
+            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+        }
     }
 
     if ($Body) {
@@ -64,7 +77,52 @@ function Invoke-FortiGateApi {
         $params.Body = ($Body | ConvertTo-Json -Depth 20)
     }
 
-    Invoke-RestMethod @params
+    # FortiGate can reset its HTTPS/API listener for a few seconds after a certificate
+    # import or admin-server-cert change. Retry idempotent calls so the flow continues
+    # instead of leaving references on the fallback certificate.
+    $maxAttempts = if ($Method -in @("GET","PUT","DELETE")) { 6 } else { 1 }
+    $retryDelays = @(3, 5, 8, 13, 21)
+
+    for ($attempt = 0; $attempt -lt $maxAttempts; $attempt++) {
+        try {
+            return Invoke-RestMethod @params
+        }
+        catch {
+            if ($attempt -ge ($maxAttempts - 1)) {
+                throw
+            }
+            $delay = $retryDelays[[Math]::Min($attempt, $retryDelays.Count - 1)]
+            Write-Log "FortiGate $Method $Path fejlede (forsøg $($attempt + 1)/$maxAttempts): $($_.Exception.Message). Prøver igen om $delay s." "WARN"
+            Start-Sleep -Seconds $delay
+        }
+    }
+}
+
+function Get-CmdbValue {
+    param($Response, [string] $Property)
+    if ($null -eq $Response) { return $null }
+    $first = @($Response.results)[0]
+    if ($null -eq $first) { return $null }
+    return [string]$first.$Property
+}
+
+function Get-FortiGateAdminCert {
+    return Get-CmdbValue (Invoke-FortiGateApi -Method GET -Path "/api/v2/cmdb/system/global") "admin-server-cert"
+}
+
+function Get-FortiGateSslVpnCert {
+    param([string] $Vdom)
+    return Get-CmdbValue (Invoke-FortiGateApi -Method GET -Path "/api/v2/cmdb/vpn.ssl/settings?vdom=$Vdom") "servercert"
+}
+
+function Set-FortiGateAdminCert {
+    param([string] $Name)
+    Invoke-FortiGateApi -Method PUT -Path "/api/v2/cmdb/system/global" -Body @{ "admin-server-cert" = $Name } | Out-Null
+}
+
+function Set-FortiGateSslVpnCert {
+    param([string] $Name, [string] $Vdom)
+    Invoke-FortiGateApi -Method PUT -Path "/api/v2/cmdb/vpn.ssl/settings?vdom=$Vdom" -Body @{ servercert = $Name } | Out-Null
 }
 
 try {
@@ -81,13 +139,19 @@ try {
 
     $CertName = [string]$settings.CertName
     $Scope = if ($settings.Scope) { [string]$settings.Scope } else { "vdom" }
+    $FallbackCert = if ($settings.FallbackCert) { [string]$settings.FallbackCert } else { "Fortinet_Factory" }
     $script:LogPath = [string]$settings.LogPath
     $script:SkipCertificateCheck = Get-XmlBool $settings.SkipCertificateCheck $true
+
+    if ([string]::IsNullOrWhiteSpace($CertName)) {
+        throw "CertName mangler i $ConfigPath"
+    }
 
     Write-Log "Starter FortiGate certifikat sync."
     Write-Log "Config: $ConfigPath"
     Write-Log "PFX-fil: $PfxFile"
     Write-Log "Certifikatnavn på FortiGate: $CertName"
+    Write-Log "Fallback-certifikat: $FallbackCert"
 
     Write-Log "Læser PFX-fil..."
     $pfxBytes = [System.IO.File]::ReadAllBytes($PfxFile)
@@ -115,16 +179,34 @@ try {
             Write-Log "Forbundet til FortiGate $($status.version), serial $($status.serial)."
 
             Write-Log "Henter eksisterende certifikater..."
-            $fortiCerts = Invoke-FortiGateApi `
-                -Method GET `
-                -Path "/api/v2/cmdb/vpn.certificate/local?vdom=$Vdom"
-
+            $fortiCerts = Invoke-FortiGateApi -Method GET -Path "/api/v2/cmdb/vpn.certificate/local?vdom=$Vdom"
             $existingCert = $fortiCerts.results |
                 Where-Object { $_.name -eq $CertName } |
                 Select-Object -First 1
 
+            $movedAdmin = $false
+            $movedSslVpn = $false
+
             if ($existingCert) {
-                Write-Log "Certifikatet '$CertName' findes allerede. Det overskrives/opdateres."
+                # Safe replace: FortiGate refuses to delete/re-import a certificate that
+                # is still referenced. Move known references to an existing fallback
+                # certificate first, then delete and re-import under the final name.
+                Write-Log "Certifikatet '$CertName' findes. Udfører sikker udskiftning via fallback '$FallbackCert'."
+
+                if ((Get-FortiGateAdminCert) -eq $CertName) {
+                    Write-Log "Admin-server-cert peger på '$CertName' -> flytter midlertidigt til '$FallbackCert'."
+                    Set-FortiGateAdminCert -Name $FallbackCert
+                    $movedAdmin = $true
+                }
+
+                if ((Get-FortiGateSslVpnCert -Vdom $Vdom) -eq $CertName) {
+                    Write-Log "SSL-VPN servercert peger på '$CertName' -> flytter midlertidigt til '$FallbackCert'."
+                    Set-FortiGateSslVpnCert -Name $FallbackCert -Vdom $Vdom
+                    $movedSslVpn = $true
+                }
+
+                Write-Log "Sletter eksisterende certifikat '$CertName'."
+                Invoke-FortiGateApi -Method DELETE -Path "/api/v2/cmdb/vpn.certificate/local/$CertName?vdom=$Vdom" | Out-Null
             }
             else {
                 Write-Log "Certifikatet '$CertName' findes ikke. Det oprettes."
@@ -139,40 +221,24 @@ try {
             }
 
             Write-Log "Uploader PFX til FortiGate..."
-            $upload = Invoke-FortiGateApi `
-                -Method POST `
-                -Path "/api/v2/monitor/vpn-certificate/local/import?vdom=$Vdom" `
-                -Body $body
-
+            $upload = Invoke-FortiGateApi -Method POST -Path "/api/v2/monitor/vpn-certificate/local/import?vdom=$Vdom" -Body $body
             Write-Log "Upload gennemført. Status: $($upload.status)"
 
-            if ($UpdateAdminCert) {
-                Write-Log "Opdaterer HTTPS admin-certifikat til '$CertName'..."
-
-                $adminUpdate = Invoke-FortiGateApi `
-                    -Method PUT `
-                    -Path "/api/v2/cmdb/system/global" `
-                    -Body @{
-                        "admin-server-cert" = $CertName
-                    }
-
-                Write-Log "HTTPS admin-certifikat opdateret. Status: $($adminUpdate.status)"
+            # Point references at the new certificate. Anything we moved to the fallback
+            # is always restored, plus anything explicitly requested in config.
+            if ($UpdateAdminCert -or $movedAdmin) {
+                Write-Log "Sætter HTTPS admin-certifikat til '$CertName'..."
+                Set-FortiGateAdminCert -Name $CertName
+                Write-Log "HTTPS admin-certifikat opdateret."
             }
             else {
                 Write-Log "Springer HTTPS admin-certifikat over."
             }
 
-            if ($UpdateSslVpnCert) {
-                Write-Log "Opdaterer SSL-VPN certifikat til '$CertName'..."
-
-                $sslVpnUpdate = Invoke-FortiGateApi `
-                    -Method PUT `
-                    -Path "/api/v2/cmdb/vpn.ssl/settings?vdom=$Vdom" `
-                    -Body @{
-                        servercert = $CertName
-                    }
-
-                Write-Log "SSL-VPN certifikat opdateret. Status: $($sslVpnUpdate.status)"
+            if ($UpdateSslVpnCert -or $movedSslVpn) {
+                Write-Log "Sætter SSL-VPN certifikat til '$CertName'..."
+                Set-FortiGateSslVpnCert -Name $CertName -Vdom $Vdom
+                Write-Log "SSL-VPN certifikat opdateret."
             }
             else {
                 Write-Log "Springer SSL-VPN certifikat over."
@@ -190,8 +256,10 @@ try {
     Write-Log "------------------------------------------------------------"
 
     if ($script:HadErrors) {
+        # Fatal exit code (3) so the agent's hook pipeline treats a failed deployment
+        # as a real failure instead of a warning that is silently swallowed.
         Write-Log "Certifikat-sync færdig med fejl på en eller flere FortiGates." "ERROR"
-        exit 1
+        exit 3
     }
 
     Write-Log "Certifikat-sync færdig uden fejl."
@@ -199,5 +267,10 @@ try {
 }
 catch {
     Write-Log $_.Exception.Message "ERROR"
-    exit 1
+    exit 3
+}
+finally {
+    if ($PSVersionTable.PSVersion.Major -lt 6) {
+        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = $null
+    }
 }

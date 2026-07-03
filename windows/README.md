@@ -47,6 +47,16 @@ Connexa ACME Agent
 
 It runs as `SYSTEM` every 12 hours by default.
 
+## Security
+
+- Run the installer from an elevated PowerShell (it verifies this and refuses otherwise).
+- The installer locks the install tree (`C:\ProgramData\Connexa\ACMEAgent`) down to
+  `SYSTEM` + `Administrators` only, so non-admin users cannot read secrets or drop in
+  hooks that would run as `SYSTEM`.
+- Use `-StoreSecretsProtected` to store the API key / PFX password with machine-scoped
+  DPAPI instead of plaintext in `config.json`. It is decryptable by the `SYSTEM` task on
+  the same machine, regardless of which admin account ran the installer.
+
 ## Manual test
 
 ```powershell

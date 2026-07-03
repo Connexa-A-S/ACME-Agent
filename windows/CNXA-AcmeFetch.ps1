@@ -22,6 +22,13 @@ param(
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = "Stop"
 
+# Windows PowerShell 5.1 (used by the scheduled task) does not enable TLS 1.2 by
+# default, which breaks HTTPS calls to modern endpoints. PowerShell 7 already does.
+if ($PSVersionTable.PSVersion.Major -lt 6) {
+    [Net.ServicePointManager]::SecurityProtocol = `
+        [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+}
+
 function New-DirectoryIfMissing {
     param([Parameter(Mandatory)][string]$Path)
     if (-not (Test-Path -LiteralPath $Path)) {
@@ -266,7 +273,23 @@ function Resolve-SecretValue {
         return $Value
     }
 
-    if ($Value.ProtectedValue) {
+    # Note: property access is done via PSObject.Properties because Set-StrictMode 3.0
+    # throws on direct access to a property that is absent on the object.
+
+    # Machine-scoped DPAPI (written by install-agent.ps1 -StoreSecretsProtected).
+    # Decryptable by the SYSTEM scheduled task on the same machine.
+    if ($Value.PSObject.Properties["ProtectedValueB64"] -and $Value.ProtectedValueB64) {
+        Add-Type -AssemblyName System.Security
+        $protected = [Convert]::FromBase64String([string]$Value.ProtectedValueB64)
+        $entropy = [Text.Encoding]::UTF8.GetBytes("CNXA-ACMEAgent")
+        $bytes = [Security.Cryptography.ProtectedData]::Unprotect(
+            $protected, $entropy, [Security.Cryptography.DataProtectionScope]::LocalMachine)
+        return [Text.Encoding]::UTF8.GetString($bytes)
+    }
+
+    # Legacy user-scoped DPAPI. Only decryptable by the same user account that
+    # created it (kept for backward compatibility).
+    if ($Value.PSObject.Properties["ProtectedValue"] -and $Value.ProtectedValue) {
         $secure = ConvertTo-SecureString -String $Value.ProtectedValue
         $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
         try {
@@ -279,7 +302,7 @@ function Resolve-SecretValue {
         }
     }
 
-    if ($Value.File) {
+    if ($Value.PSObject.Properties["File"] -and $Value.File) {
         return (Get-Content -LiteralPath $Value.File -Raw -Encoding UTF8).Trim()
     }
 
@@ -361,7 +384,7 @@ $script:LogFile = Join-Path $logPath ("agent-{0}.log" -f (Get-Date).ToString("yy
 
 $headers = @{
     "X-API-Key" = $serviceApiKey
-    "User-Agent" = "CNXA-ACME-PowerShell-Agent/3.1.0"
+    "User-Agent" = "CNXA-ACME-PowerShell-Agent/3.5.5"
 }
 
 Write-AgentLog "Checking ACME service at $apiBaseUrl"

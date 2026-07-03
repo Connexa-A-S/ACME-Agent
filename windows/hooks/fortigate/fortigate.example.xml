@@ -4,6 +4,9 @@
   <LogPath>C:\ProgramData\Connexa\ACMEAgent\logs\FortiGateCertSync.log</LogPath>
   <PfxPassword>CHANGE-ME-STORE-IN-TECHFLOW</PfxPassword>
   <SkipCertificateCheck>true</SkipCertificateCheck>
+  <!-- Existing local FortiGate certificate that references are parked on while the
+       in-use certificate is replaced. Must already exist on the device. -->
+  <FallbackCert>Fortinet_Factory</FallbackCert>
 
   <FortiGates>
     <FortiGate>
