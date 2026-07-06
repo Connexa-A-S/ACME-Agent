@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+#
+# Example real hook: install the renewed PEM certificate for nginx and reload.
+#
+# Rename to 20-nginx-reload.sh (drop .example) to activate. Requires OUTPUT_FORMAT=pem.
+# Destination paths can be overridden with the CNXA_NGINX_CERT / CNXA_NGINX_KEY env vars.
+#
+set -eu
+
+[ "${CNXA_FORMAT}" = "pem" ] || { echo "nginx hook requires pem output; skipping"; exit 1; }
+
+DEST_CERT="${CNXA_NGINX_CERT:-/etc/nginx/ssl/${CNXA_DOMAIN}.crt}"
+DEST_KEY="${CNXA_NGINX_KEY:-/etc/nginx/ssl/${CNXA_DOMAIN}.key}"
+
+install -d -m 0750 "$(dirname "$DEST_CERT")"
+
+# Include the issuer chain with the leaf certificate if present.
+if [ -s "${CNXA_CURRENT_PATH}/issuer.crt" ]; then
+    cat "${CNXA_CURRENT_PATH}/cert.crt" "${CNXA_CURRENT_PATH}/issuer.crt" >"$DEST_CERT"
+else
+    cp "${CNXA_CURRENT_PATH}/cert.crt" "$DEST_CERT"
+fi
+cp "${CNXA_CURRENT_PATH}/cert.key" "$DEST_KEY"
+chmod 640 "$DEST_CERT" "$DEST_KEY"
+
+echo "Installed certificate to $DEST_CERT"
+
+if ! nginx -t; then
+    echo "nginx config test failed; not reloading" >&2
+    exit 3
+fi
+
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl reload nginx
+else
+    nginx -s reload
+fi
+
+echo "nginx reloaded"
+exit 0

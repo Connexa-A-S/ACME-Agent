@@ -10,19 +10,19 @@ live in local config files that are never committed.
 ## Layout
 
 ```text
-windows/
-  CNXA-AcmeFetch.ps1     Fetch agent (scheduled task)
+windows/                 Windows agent (scheduled task, PowerShell)
+  CNXA-AcmeFetch.ps1     Fetch agent
   install-agent.ps1      Installer
-  README.md              Agent documentation
-  hooks/
-    windows-roles/       Cert store + IIS, RDP, WinRM
-    fortigate/           FortiGate (admin GUI + SSL VPN)
-    netscaler/           Citrix NetScaler / ADC (NITRO)
-    audiocodes/          AudioCodes Mediant (REST)
+  hooks/                 windows-roles, fortigate, netscaler, audiocodes,
+                         paloalto, kemp, f5, synology
+unix/                    Unix agent (systemd timer, bash)
+  cnxa-acme-fetch.sh     Fetch agent
+  install-agent.sh       Installer
+  hooks.d/               Hooks (env-var context; nginx example included)
 ```
 
-Start with [windows/README.md](windows/README.md), then the per-pack READMEs under
-`windows/hooks/`.
+- Windows: start with [windows/README.md](windows/README.md), then the per-pack READMEs.
+- Unix/Linux: see [unix/README.md](unix/README.md).
 
 ## Platform API contract
 
@@ -41,4 +41,5 @@ Authentication is a service API key sent as `X-API-Key`.
 
 ## Requirements
 
-Windows PowerShell 5.1 or PowerShell 7. See [windows/README.md](windows/README.md).
+- Windows: Windows PowerShell 5.1 or PowerShell 7. See [windows/README.md](windows/README.md).
+- Unix: `bash`, `curl`, `sed`, `grep` (+ `unzip` for PEM). See [unix/README.md](unix/README.md).

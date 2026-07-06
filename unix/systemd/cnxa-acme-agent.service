@@ -1,0 +1,8 @@
+[Unit]
+Description=CNXA ACME fetch agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/cnxa-acme-fetch /etc/cnxa-acme/config.conf
