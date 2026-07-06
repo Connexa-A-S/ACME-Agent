@@ -46,6 +46,10 @@ Authentication is a service API key sent as `X-API-Key`.
 - Windows: Windows PowerShell 5.1 or PowerShell 7. See [windows/README.md](windows/README.md).
 - Unix: `bash`, `curl`, `sed`, `grep` (+ `unzip` for PEM). See [unix/README.md](unix/README.md).
 
+## License
+
+MIT — see [LICENSE](LICENSE).
+
 ---
 
 ## About
