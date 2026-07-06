@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+#
+# Install the renewed PEM certificate for Postfix and/or Dovecot and reload them.
+# Rename to 50-postfix-dovecot-reload.sh to activate. Requires OUTPUT_FORMAT=pem.
+#
+# Point your mail config at these files once (smtpd_tls_cert_file / ssl_cert etc.):
+#   Override with CNXA_MAIL_CERT / CNXA_MAIL_KEY.
+#
+set -eu
+
+[ "${CNXA_FORMAT}" = "pem" ] || { echo "mail hook requires pem output; skipping"; exit 1; }
+
+DEST_CERT="${CNXA_MAIL_CERT:-/etc/ssl/mail/${CNXA_DOMAIN}.crt}"
+DEST_KEY="${CNXA_MAIL_KEY:-/etc/ssl/mail/${CNXA_DOMAIN}.key}"
+
+install -d -m 0750 "$(dirname "$DEST_CERT")"
+
+# Ship leaf + chain so SMTP/IMAP clients get the full trust path.
+if [ -s "${CNXA_CURRENT_PATH}/issuer.crt" ]; then
+    cat "${CNXA_CURRENT_PATH}/cert.crt" "${CNXA_CURRENT_PATH}/issuer.crt" >"$DEST_CERT"
+else
+    cp "${CNXA_CURRENT_PATH}/cert.crt" "$DEST_CERT"
+fi
+cp "${CNXA_CURRENT_PATH}/cert.key" "$DEST_KEY"
+chmod 640 "$DEST_CERT" "$DEST_KEY"
+echo "Installed certificate to $DEST_CERT"
+
+reloaded=0
+
+if command -v postfix >/dev/null 2>&1; then
+    if postfix check; then postfix reload && echo "Postfix reloaded"; reloaded=1
+    else echo "postfix check failed; not reloading" >&2; exit 3; fi
+fi
+
+if command -v doveadm >/dev/null 2>&1; then
+    doveadm reload && echo "Dovecot reloaded"; reloaded=1
+elif command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet dovecot 2>/dev/null; then
+    systemctl reload dovecot && echo "Dovecot reloaded"; reloaded=1
+fi
+
+[ "$reloaded" = "1" ] || echo "Neither Postfix nor Dovecot found to reload" >&2
+exit 0

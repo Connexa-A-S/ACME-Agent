@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+#
+# Generic template: copy certificate files somewhere and run a command / reload a service.
+# Rename to 90-copy-and-run.sh and edit the variables below. Covers the long tail of apps
+# that just read a cert and key from disk.
+#
+set -eu
+
+# --- edit these ---------------------------------------------------------------
+DEST_CERT="/opt/myapp/ssl/${CNXA_DOMAIN}.crt"
+DEST_KEY="/opt/myapp/ssl/${CNXA_DOMAIN}.key"
+RESTART_SERVICE=""          # e.g. "myapp"  (leave empty to skip)
+RUN_COMMAND=""              # e.g. "/opt/myapp/bin/reload"  (leave empty to skip)
+INCLUDE_CHAIN="true"        # append issuer.crt to the cert file
+# -----------------------------------------------------------------------------
+
+[ "${CNXA_FORMAT}" = "pem" ] || { echo "this hook expects pem output; adjust it for pfx if needed"; exit 1; }
+
+install -d -m 0750 "$(dirname "$DEST_CERT")"
+
+if [ "$INCLUDE_CHAIN" = "true" ] && [ -s "${CNXA_CURRENT_PATH}/issuer.crt" ]; then
+    cat "${CNXA_CURRENT_PATH}/cert.crt" "${CNXA_CURRENT_PATH}/issuer.crt" >"$DEST_CERT"
+else
+    cp "${CNXA_CURRENT_PATH}/cert.crt" "$DEST_CERT"
+fi
+cp "${CNXA_CURRENT_PATH}/cert.key" "$DEST_KEY"
+chmod 640 "$DEST_CERT" "$DEST_KEY"
+echo "Copied certificate to $DEST_CERT"
+
+if [ -n "$RESTART_SERVICE" ]; then
+    if command -v systemctl >/dev/null 2>&1; then systemctl restart "$RESTART_SERVICE"
+    else service "$RESTART_SERVICE" restart; fi
+    echo "Restarted $RESTART_SERVICE"
+fi
+
+if [ -n "$RUN_COMMAND" ]; then
+    echo "Running: $RUN_COMMAND"
+    sh -c "$RUN_COMMAND" || { echo "command failed" >&2; exit 3; }
+fi
+
+exit 0

@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+#
+# Install the renewed certificate for HAProxy (single combined PEM: key + cert + chain)
+# and reload. Rename to 40-haproxy-reload.sh to activate. Requires OUTPUT_FORMAT=pem.
+#
+# Override the destination and config path with CNXA_HAPROXY_PEM / CNXA_HAPROXY_CFG.
+#
+set -eu
+
+[ "${CNXA_FORMAT}" = "pem" ] || { echo "haproxy hook requires pem output; skipping"; exit 1; }
+
+DEST_PEM="${CNXA_HAPROXY_PEM:-/etc/haproxy/certs/${CNXA_DOMAIN}.pem}"
+CFG="${CNXA_HAPROXY_CFG:-/etc/haproxy/haproxy.cfg}"
+
+install -d -m 0750 "$(dirname "$DEST_PEM")"
+
+# HAProxy expects the private key, certificate and chain concatenated in one file.
+umask 077
+cat "${CNXA_CURRENT_PATH}/cert.key" "${CNXA_CURRENT_PATH}/cert.crt" >"$DEST_PEM"
+[ -s "${CNXA_CURRENT_PATH}/issuer.crt" ] && cat "${CNXA_CURRENT_PATH}/issuer.crt" >>"$DEST_PEM"
+umask 022
+echo "Installed combined PEM to $DEST_PEM"
+
+if command -v haproxy >/dev/null 2>&1; then
+    if ! haproxy -c -f "$CFG" >/dev/null; then
+        echo "HAProxy config check failed; not reloading" >&2
+        exit 3
+    fi
+fi
+
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl reload haproxy
+else
+    service haproxy reload
+fi
+echo "HAProxy reloaded"
+exit 0

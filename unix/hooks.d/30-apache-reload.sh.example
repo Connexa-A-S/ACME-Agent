@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#
+# Install the renewed PEM certificate for Apache (httpd / apache2) and reload.
+# Rename to 30-apache-reload.sh to activate. Requires OUTPUT_FORMAT=pem.
+#
+# Override destinations with CNXA_APACHE_CERT / CNXA_APACHE_KEY.
+#
+set -eu
+
+[ "${CNXA_FORMAT}" = "pem" ] || { echo "apache hook requires pem output; skipping"; exit 1; }
+
+DEST_CERT="${CNXA_APACHE_CERT:-/etc/ssl/apache/${CNXA_DOMAIN}.crt}"
+DEST_KEY="${CNXA_APACHE_KEY:-/etc/ssl/apache/${CNXA_DOMAIN}.key}"
+
+install -d -m 0750 "$(dirname "$DEST_CERT")"
+
+# Apache 2.4.8+ reads the full chain from SSLCertificateFile.
+if [ -s "${CNXA_CURRENT_PATH}/issuer.crt" ]; then
+    cat "${CNXA_CURRENT_PATH}/cert.crt" "${CNXA_CURRENT_PATH}/issuer.crt" >"$DEST_CERT"
+else
+    cp "${CNXA_CURRENT_PATH}/cert.crt" "$DEST_CERT"
+fi
+cp "${CNXA_CURRENT_PATH}/cert.key" "$DEST_KEY"
+chmod 640 "$DEST_CERT" "$DEST_KEY"
+echo "Installed certificate to $DEST_CERT"
+
+if command -v apache2ctl >/dev/null 2>&1; then CTL=apache2ctl
+elif command -v apachectl >/dev/null 2>&1; then CTL=apachectl
+else echo "apachectl/apache2ctl not found" >&2; exit 3
+fi
+
+if ! "$CTL" -t; then
+    echo "Apache config test failed; not reloading" >&2
+    exit 3
+fi
+
+"$CTL" -k graceful
+echo "Apache reloaded (graceful)"
+exit 0

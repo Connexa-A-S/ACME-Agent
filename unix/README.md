@@ -65,9 +65,21 @@ CNXA_DOMAIN         CNXA_FINGERPRINT    CNXA_PREVIOUS_FINGERPRINT
 Exit codes: `0` OK, `1` warning (continue), `2` retry on next run, `3+` fatal (stops the
 pipeline). Each hook gets its own log under `/var/log/cnxa-acme/`.
 
-`10-example.sh` just prints the context. `20-nginx-reload.sh.example` installs the PEM for
-nginx and reloads it — rename it to drop `.example` to activate. The same pattern fits
-Apache, HAProxy, Postfix/Dovecot, etc.
+### Included hooks
+
+`10-example.sh` (active) just prints the context. The rest ship as `*.sh.example` — each
+installs the PEM and reloads the service after a config test. **Rename to drop `.example`
+to activate**, and set the destination paths (defaults or the `CNXA_*` env vars in each file):
+
+| File | Target |
+|------|--------|
+| `20-nginx-reload.sh.example` | nginx (`nginx -t` + reload) |
+| `30-apache-reload.sh.example` | Apache / httpd (`apachectl -t` + graceful) |
+| `40-haproxy-reload.sh.example` | HAProxy (combined PEM, `haproxy -c` + reload) |
+| `50-postfix-dovecot-reload.sh.example` | Postfix and/or Dovecot |
+| `90-copy-and-run.sh.example` | Generic: copy to a path + restart service / run a command |
+
+All require `OUTPUT_FORMAT=pem`. They are templates — test on a representative host first.
 
 ## Config
 
