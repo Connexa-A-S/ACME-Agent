@@ -91,14 +91,17 @@ need, copy its `*.example.*` config to the real name, and configure it.
 
 | Pack | Target | Output format |
 |------|--------|---------------|
-| `hooks/windows-roles/` | Cert store + IIS, RDP, WinRM (by thumbprint) | `pfx` |
+| `hooks/windows-roles/` | Cert store + IIS, RDP, WinRM, Exchange, RDS, SQL Server, AD FS, RRAS/SSTP, generic copy+run, notify | `pfx` |
 | `hooks/fortigate/` | FortiGate (admin GUI + SSL VPN, safe replace) | `pfx` |
 | `hooks/netscaler/` | Citrix NetScaler / ADC (NITRO REST) | `pem` |
 | `hooks/audiocodes/` | AudioCodes Mediant SBC / gateway (REST) | `pem` |
+| `hooks/paloalto/` | Palo Alto (PAN-OS XML API) | `pem` |
 
-The device packs (`fortigate`, `netscaler`, `audiocodes`) and the Windows-role hooks are
-templates — test them in each environment before running unattended. See each pack's
-`README.md`.
+Within `windows-roles/`, each role hook is off by default and enabled per section in
+`hooks.json`, so one pack covers a whole Windows server.
+
+All packs are templates — test them in each environment before running unattended. See each
+pack's `README.md`.
 
 ## Hook parameters
 

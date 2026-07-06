@@ -1,0 +1,19 @@
+<PaloAltoCertSync>
+  <!-- Name the certificate object gets on the firewall. Reference it from an
+       SSL/TLS Service Profile (GlobalProtect, mgmt, etc.) yourself. -->
+  <CertName>wildcard-kunde-dk</CertName>
+  <LogPath>C:\ProgramData\Connexa\ACMEAgent\logs\PaloAltoCertSync.log</LogPath>
+  <SkipCertificateCheck>true</SkipCertificateCheck>
+  <Commit>true</Commit>
+
+  <Firewalls>
+    <Firewall>
+      <Name>fw01</Name>
+      <Host>10.0.0.30</Host>
+      <!-- PAN-OS API key: generate once via type=keygen and store it here. -->
+      <ApiKey>CHANGE-ME-STORE-IN-TECHFLOW</ApiKey>
+      <!-- Passphrase PAN-OS uses to protect the imported private key on-device. -->
+      <KeyPassphrase>CHANGE-ME</KeyPassphrase>
+    </Firewall>
+  </Firewalls>
+</PaloAltoCertSync>

@@ -1,16 +1,21 @@
 {
   "PfxPassword": "same-password-as-agent-config",
-  "Iis": {
-    "Enabled": true,
-    "SiteName": "Default Web Site",
-    "Port": 443,
-    "HostHeader": ""
-  },
-  "Rdp": {
-    "Enabled": false
-  },
-  "WinRm": {
+  "Iis":    { "Enabled": true,  "SiteName": "Default Web Site", "Port": 443, "HostHeader": "" },
+  "Rdp":    { "Enabled": false },
+  "WinRm":  { "Enabled": false, "HostName": "" },
+  "Exchange": { "Enabled": false, "Services": "IIS,SMTP" },
+  "Rds":    { "Enabled": false, "ConnectionBroker": "", "Roles": ["RDGateway", "RDWebAccess", "RDRedirector", "RDPublishing"] },
+  "SqlServer": { "Enabled": false, "Instance": "MSSQLSERVER", "ForceEncryption": false, "RestartService": false },
+  "Adfs":   { "Enabled": false, "UpdateServiceCommunications": true },
+  "RrasSstp": { "Enabled": false },
+  "CopyAndRun": {
     "Enabled": false,
-    "HostName": ""
-  }
+    "Files": [
+      { "From": "cert.crt", "To": "C:\\app\\ssl\\server.crt" },
+      { "From": "cert.key", "To": "C:\\app\\ssl\\server.key" }
+    ],
+    "RestartService": "",
+    "Command": ""
+  },
+  "Notify": { "Enabled": false, "TeamsWebhookUrl": "" }
 }

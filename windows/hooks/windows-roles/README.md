@@ -55,10 +55,22 @@ Hooks run in filename order, so the import always runs first:
 | `20-iis-binding.ps1` | Point an IIS https binding at the new thumbprint |
 | `30-rdp-listener.ps1` | Set the RDP-Tcp listener certificate |
 | `40-winrm-https.ps1` | Create/update the WinRM HTTPS listener |
+| `50-exchange.ps1` | `Enable-ExchangeCertificate` for IIS/SMTP/IMAP/POP (Exchange server, PS 5.1) |
+| `60-rds.ps1` | `Set-RDCertificate` for RD Gateway / Web / Broker (needs the PFX) |
+| `70-sql-server.ps1` | Set SQL Server `SuperSocketNetLib\Certificate`, grant key ACL, restart |
+| `80-adfs.ps1` | `Set-AdfsSslCertificate` (+ service-communications), restart AD FS |
+| `85-rras-sstp.ps1` | `Set-RemoteAccess -SslCertificate` for SSTP VPN, restart RemoteAccess |
+| `90-copy-and-run.ps1` | Generic: copy cert files to a path, restart a service, run a command |
+| `95-notify.ps1` | Post a deploy notification to a Teams/webhook URL (on success) |
 
-Consumer hooks never need the PFX password: `10-import-to-store` writes the imported
-thumbprint to `current\deployed-thumbprint.txt`, and the others read it (falling back
-to a store lookup by domain).
+Each hook is off by default and gated by its section in `hooks.json` — enable only the
+roles present on the server. Consumer hooks never need the PFX password: `10-import-to-store`
+writes the imported thumbprint to `current\deployed-thumbprint.txt`, and the others read it
+(falling back to a store lookup by domain). `60-rds` is the exception — `Set-RDCertificate`
+takes a PFX, so it uses `PfxPassword` from `hooks.json`.
+
+> **Templates — test each on a representative server before unattended use.** `70-sql-server`
+> in particular touches the registry, private-key ACLs and restarts the SQL service.
 
 ## Extending
 
