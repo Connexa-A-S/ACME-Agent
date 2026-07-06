@@ -1,0 +1,18 @@
+<NetScalerCertSync>
+  <!-- Name of the sslcertkey object on the NetScaler. If it already exists it is
+       updated in place (nodomaincheck) so bound vservers keep working. -->
+  <CertKeyName>wildcard-kunde-dk</CertKeyName>
+  <FileLocation>/nsconfig/ssl</FileLocation>
+  <LogPath>C:\ProgramData\Connexa\ACMEAgent\logs\NetScalerCertSync.log</LogPath>
+  <SkipCertificateCheck>true</SkipCertificateCheck>
+  <SaveConfig>true</SaveConfig>
+
+  <NetScalers>
+    <NetScaler>
+      <Name>ns01</Name>
+      <Host>10.0.0.10</Host>
+      <Username>nsroot</Username>
+      <Password>CHANGE-ME-STORE-IN-TECHFLOW</Password>
+    </NetScaler>
+  </NetScalers>
+</NetScalerCertSync>

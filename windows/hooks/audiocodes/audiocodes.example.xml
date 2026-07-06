@@ -1,0 +1,23 @@
+<AudioCodesCertSync>
+  <!-- Index of the TLS context to update (0 = default). -->
+  <TlsContextId>0</TlsContextId>
+  <LogPath>C:\ProgramData\Connexa\ACMEAgent\logs\AudioCodesCertSync.log</LogPath>
+  <SkipCertificateCheck>true</SkipCertificateCheck>
+  <SaveConfig>true</SaveConfig>
+
+  <!-- Override these only if your firmware's REST API differs. "{id}" is replaced with
+       TlsContextId. -->
+  <CertificateApiPath>/api/v1/files/tls/{id}/certificate</CertificateApiPath>
+  <PrivateKeyApiPath>/api/v1/files/tls/{id}/privateKey</PrivateKeyApiPath>
+  <UploadMethod>PUT</UploadMethod>
+  <SaveConfigApiPath>/api/v1/actions/saveConfiguration</SaveConfigApiPath>
+
+  <Devices>
+    <Device>
+      <Name>sbc01</Name>
+      <Host>10.0.0.20</Host>
+      <Username>Admin</Username>
+      <Password>CHANGE-ME-STORE-IN-TECHFLOW</Password>
+    </Device>
+  </Devices>
+</AudioCodesCertSync>

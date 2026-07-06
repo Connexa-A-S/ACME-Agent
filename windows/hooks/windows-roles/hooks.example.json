@@ -1,0 +1,16 @@
+{
+  "PfxPassword": "same-password-as-agent-config",
+  "Iis": {
+    "Enabled": true,
+    "SiteName": "Default Web Site",
+    "Port": 443,
+    "HostHeader": ""
+  },
+  "Rdp": {
+    "Enabled": false
+  },
+  "WinRm": {
+    "Enabled": false,
+    "HostName": ""
+  }
+}

@@ -84,6 +84,22 @@ The agent also supports a static `Hooks` array in `config.json`, but `HooksPath`
 is recommended for MSP deployment because hooks can be dropped into the folder
 without changing config.
 
+## Included hook packs
+
+Each pack is a self-contained folder under `hooks/`. Point `HooksPath` at the one you
+need, copy its `*.example.*` config to the real name, and configure it.
+
+| Pack | Target | Output format |
+|------|--------|---------------|
+| `hooks/windows-roles/` | Cert store + IIS, RDP, WinRM (by thumbprint) | `pfx` |
+| `hooks/fortigate/` | FortiGate (admin GUI + SSL VPN, safe replace) | `pfx` |
+| `hooks/netscaler/` | Citrix NetScaler / ADC (NITRO REST) | `pem` |
+| `hooks/audiocodes/` | AudioCodes Mediant SBC / gateway (REST) | `pem` |
+
+The device packs (`fortigate`, `netscaler`, `audiocodes`) and the Windows-role hooks are
+templates — test them in each environment before running unattended. See each pack's
+`README.md`.
+
 ## Hook parameters
 
 Every hook receives:
