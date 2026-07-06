@@ -1,6 +1,8 @@
 # CNXA ACME Agent
 
-Lightweight fetch agent and certificate-deployment hooks for the CNXA ACME Platform.
+Lightweight fetch agent and certificate-deployment hooks, built to work with the
+**Connexa A/S ACME platform** — Connexa's certificate lifecycle service for issuing,
+renewing and distributing certificates.
 
 The agent is a client: it authenticates to the platform with a service API key,
 downloads the assigned certificate when it changes, keeps a local versioned copy, and
@@ -43,3 +45,12 @@ Authentication is a service API key sent as `X-API-Key`.
 
 - Windows: Windows PowerShell 5.1 or PowerShell 7. See [windows/README.md](windows/README.md).
 - Unix: `bash`, `curl`, `sed`, `grep` (+ `unzip` for PEM). See [unix/README.md](unix/README.md).
+
+---
+
+## About
+
+This agent is designed to work with the Connexa A/S ACME platform. Interested in managed
+certificate automation for your servers and appliances?
+
+**Connexa A/S** — [salg@cnxa.dk](mailto:salg@cnxa.dk) · +45 44 225 226
