@@ -1,0 +1,17 @@
+<VCenterCertSync>
+  <!-- Send issuer.crt as the root_cert (recommended). -->
+  <IncludeChain>true</IncludeChain>
+  <LogPath>C:\ProgramData\Connexa\ACMEAgent\logs\VCenterCertSync.log</LogPath>
+  <SkipCertificateCheck>true</SkipCertificateCheck>
+
+  <VCenters>
+    <VCenter>
+      <Name>vc01</Name>
+      <!-- vCenter FQDN (must match the certificate SAN). -->
+      <Host>vcenter.kunde.dk</Host>
+      <!-- SSO administrator, e.g. administrator@vsphere.local -->
+      <Username>administrator@vsphere.local</Username>
+      <Password>CHANGE-ME-STORE-IN-TECHFLOW</Password>
+    </VCenter>
+  </VCenters>
+</VCenterCertSync>

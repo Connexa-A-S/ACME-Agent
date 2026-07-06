@@ -99,6 +99,7 @@ need, copy its `*.example.*` config to the real name, and configure it.
 | `hooks/kemp/` | Kemp LoadMaster (REST `addcert`) | `pem` |
 | `hooks/f5/` | F5 BIG-IP (iControl REST) | `pem` |
 | `hooks/synology/` | Synology DSM (Web API) | `pem` |
+| `hooks/vcenter/` | VMware vCenter Server (Machine SSL, REST) | `pem` |
 
 Within `windows-roles/`, each role hook is off by default and enabled per section in
 `hooks.json`, so one pack covers a whole Windows server.
