@@ -1,0 +1,18 @@
+# Certificate material / secrets — never commit
+*.pfx
+*.key
+*.crt
+*.pem
+
+# Real hook config files hold device credentials / PFX passwords.
+# Only the *.example.* templates are tracked.
+**/hooks.json
+**/fortigate.xml
+**/netscaler.xml
+**/audiocodes.xml
+
+# Agent runtime output
+state.json
+logs/
+certs/
+config.json
