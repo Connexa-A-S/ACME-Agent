@@ -1,0 +1,16 @@
+<KempCertSync>
+  <!-- Name of the certificate object on the LoadMaster. With replace=1 an existing
+       certificate of this name is updated in place, so bound Virtual Services keep working. -->
+  <CertName>wildcard-kunde-dk</CertName>
+  <LogPath>C:\ProgramData\Connexa\ACMEAgent\logs\KempCertSync.log</LogPath>
+  <SkipCertificateCheck>true</SkipCertificateCheck>
+
+  <LoadMasters>
+    <LoadMaster>
+      <Name>lm01</Name>
+      <Host>10.0.0.40</Host>
+      <Username>bal</Username>
+      <Password>CHANGE-ME-STORE-IN-TECHFLOW</Password>
+    </LoadMaster>
+  </LoadMasters>
+</KempCertSync>

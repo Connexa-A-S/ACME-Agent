@@ -1,0 +1,19 @@
+<SynologyCertSync>
+  <!-- Description identifying the certificate in DSM. Used to find and replace the
+       existing certificate in place on each renewal (avoids piling up certs). -->
+  <Description>kunde.dk (CNXA ACME)</Description>
+  <!-- Set this certificate as the DSM default. -->
+  <AsDefault>true</AsDefault>
+  <LogPath>C:\ProgramData\Connexa\ACMEAgent\logs\SynologyCertSync.log</LogPath>
+  <SkipCertificateCheck>true</SkipCertificateCheck>
+
+  <Devices>
+    <Device>
+      <!-- Host includes the DSM port, e.g. 10.0.0.60:5001 -->
+      <Name>nas01</Name>
+      <Host>10.0.0.60:5001</Host>
+      <Username>svc-acme</Username>
+      <Password>CHANGE-ME-STORE-IN-TECHFLOW</Password>
+    </Device>
+  </Devices>
+</SynologyCertSync>

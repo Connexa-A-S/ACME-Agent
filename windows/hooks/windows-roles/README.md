@@ -55,7 +55,9 @@ Hooks run in filename order, so the import always runs first:
 | `20-iis-binding.ps1` | Point an IIS https binding at the new thumbprint |
 | `30-rdp-listener.ps1` | Set the RDP-Tcp listener certificate |
 | `40-winrm-https.ps1` | Create/update the WinRM HTTPS listener |
+| `45-ldaps-dc.ps1` | Import into the AD DS store (`NTDS\Personal`) + non-disruptive LDAPS reload |
 | `50-exchange.ps1` | `Enable-ExchangeCertificate` for IIS/SMTP/IMAP/POP (Exchange server, PS 5.1) |
+| `55-java-keystore.ps1` | Import into a Java keystore (JKS/PKCS12) via keytool for Tomcat/Java apps |
 | `60-rds.ps1` | `Set-RDCertificate` for RD Gateway / Web / Broker (needs the PFX) |
 | `70-sql-server.ps1` | Set SQL Server `SuperSocketNetLib\Certificate`, grant key ACL, restart |
 | `80-adfs.ps1` | `Set-AdfsSslCertificate` (+ service-communications), restart AD FS |

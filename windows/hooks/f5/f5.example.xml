@@ -1,0 +1,16 @@
+<F5CertSync>
+  <!-- Base name for the cert/key objects on the BIG-IP. Installing under an existing
+       name updates it in place; client-ssl profiles referencing it pick up the change. -->
+  <CertName>wildcard-kunde-dk</CertName>
+  <LogPath>C:\ProgramData\Connexa\ACMEAgent\logs\F5CertSync.log</LogPath>
+  <SkipCertificateCheck>true</SkipCertificateCheck>
+
+  <BigIPs>
+    <BigIP>
+      <Name>bigip01</Name>
+      <Host>10.0.0.50</Host>
+      <Username>admin</Username>
+      <Password>CHANGE-ME-STORE-IN-TECHFLOW</Password>
+    </BigIP>
+  </BigIPs>
+</F5CertSync>

@@ -91,11 +91,14 @@ need, copy its `*.example.*` config to the real name, and configure it.
 
 | Pack | Target | Output format |
 |------|--------|---------------|
-| `hooks/windows-roles/` | Cert store + IIS, RDP, WinRM, Exchange, RDS, SQL Server, AD FS, RRAS/SSTP, generic copy+run, notify | `pfx` |
+| `hooks/windows-roles/` | Cert store + IIS, RDP, WinRM, LDAPS DC, Exchange, RDS, Java keystore, SQL Server, AD FS, RRAS/SSTP, generic copy+run, notify | `pfx` |
 | `hooks/fortigate/` | FortiGate (admin GUI + SSL VPN, safe replace) | `pfx` |
 | `hooks/netscaler/` | Citrix NetScaler / ADC (NITRO REST) | `pem` |
 | `hooks/audiocodes/` | AudioCodes Mediant SBC / gateway (REST) | `pem` |
 | `hooks/paloalto/` | Palo Alto (PAN-OS XML API) | `pem` |
+| `hooks/kemp/` | Kemp LoadMaster (REST `addcert`) | `pem` |
+| `hooks/f5/` | F5 BIG-IP (iControl REST) | `pem` |
+| `hooks/synology/` | Synology DSM (Web API) | `pem` |
 
 Within `windows-roles/`, each role hook is off by default and enabled per section in
 `hooks.json`, so one pack covers a whole Windows server.
