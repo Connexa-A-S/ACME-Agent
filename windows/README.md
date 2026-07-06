@@ -160,3 +160,12 @@ certs\<service-name>\current\issuer.crt
 The agent uses `state.json` for fingerprint tracking. If `current/` is missing
 or incomplete, the agent repairs it from `versions/`. If repair fails, it
 redownloads the certificate.
+
+---
+
+## About
+
+This agent is designed to work with the Connexa A/S ACME platform. Interested in managed
+certificate automation for your servers and appliances?
+
+**Connexa A/S** — [salg@cnxa.dk](mailto:salg@cnxa.dk) · +45 44 225 226
