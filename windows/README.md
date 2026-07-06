@@ -168,4 +168,4 @@ redownloads the certificate.
 This agent is designed to work with the Connexa A/S ACME platform. Interested in managed
 certificate automation for your servers and appliances?
 
-**Connexa A/S** — [salg@cnxa.dk](mailto:salg@cnxa.dk) · +45 44 225 226
+**Connexa A/S** · [salg@cnxa.dk](mailto:salg@cnxa.dk) · +45 44 225 226
